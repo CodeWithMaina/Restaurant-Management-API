@@ -1,3 +1,4 @@
+import { restaurant } from './../drizzle/schema';
 import { Request, Response } from "express";
 import {
     createNewRestaurantService,
@@ -6,7 +7,6 @@ import {
     getAllRestaurantsService,
     updateRestaurantService
 } from "./restaurant.service";
-import { createRestaurantValidator, updateRestaurantValidator } from "../validations/restaurant.validator";
 
 // Get all restaurants
 export const getRestaurants = async (req: Request, res: Response) => {
@@ -46,22 +46,16 @@ export const getRestaurantById = async (req: Request, res: Response) => {
 
 // Create a new restaurant
 export const createRestaurant = async (req: Request, res: Response) => {
-    const parseResult = createRestaurantValidator.safeParse(req.body);
-    if(!parseResult.success){
-        res.status(400).json({error:parseResult.error.issues})
-        return;
-    }
-    const { name, streetAddress, zipCode, cityId } = parseResult.data;
+    const restaurantId = parseInt(req.params.id);
+    const restaurant = req.body;
 
-    if (!name || !streetAddress || !zipCode || !cityId) {
-        res.status(400).json({ error: "All required fields (name, streetAddress, zipCode, cityId) are required" });
-    }
-    if (isNaN(Number(cityId))) {
-        res.status(400).json({ error: "cityId must be a valid number" });
+    if (isNaN(restaurantId)) {
+        res.status(400).json({ error: "RestaurantID must be a valid number" });
+        return;
     }
 
     try {
-        const newRestaurant = await createNewRestaurantService({ name, streetAddress, zipCode, cityId });
+        const newRestaurant = await createNewRestaurantService(restaurant);
         if (newRestaurant === null) {
              res.status(500).json({ message: "Failed to create restaurant" });
         } else {
@@ -76,21 +70,14 @@ export const createRestaurant = async (req: Request, res: Response) => {
 // Update a restaurant
 export const updateRestaurant = async (req: Request, res: Response) => {
     const restaurantId = parseInt(req.params.id);
-    const parseResult = updateRestaurantValidator.safeParse(req.body);
-    if(!parseResult.success){
-        res.status(400).json({error:parseResult.error.issues})
-        return;
-    }
+    
     if (isNaN(restaurantId)) {
         res.status(400).json({ error: "Invalid restaurant ID" });
     }
 
-    const { name, streetAddress, zipCode, cityId } = parseResult.data;
-    if(!name || !streetAddress || !zipCode || !cityId ){
-        res.status(400).json({error: "All Fields are required"})
-    }
+    const restaurant = req.body;
     try {
-         const updatedRestaurant = await updateRestaurantService(restaurantId, { name, streetAddress, zipCode, cityId});
+         const updatedRestaurant = await updateRestaurantService(restaurantId, restaurant);
             if (updatedRestaurant == null) {
                 res.status(404).json({ message: "Restaurant not found or failed to update" });
             } else {
