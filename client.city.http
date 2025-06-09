@@ -1,0 +1,27 @@
+### Get all cities
+GET http://localhost:5000/api/city
+
+### Get city by ID
+GET http://localhost:5000/api/city/5
+
+### Create new city
+POST http://localhost:5000/api/city
+Content-Type: application/json
+
+{
+    "name": "New York Wow",
+    "stateId": 1
+}
+
+### Update existing city
+PUT http://localhost:5000/api/city/5
+Content-Type: application/json
+
+{
+    "name": "New York Who",
+    "stateId": 1
+}
+
+### Delete city
+DELETE http://localhost:5000/api/city/5
+
