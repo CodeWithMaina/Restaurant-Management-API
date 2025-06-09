@@ -1,5 +1,5 @@
 {
-  "id": "5db7bdd1-3e5d-4a76-bb44-57840cb6833f",
+  "id": "1ff4c2c7-89d6-434c-adb3-a18e4815dd81",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -975,7 +975,7 @@
           "name": "confirmationCode",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "password": {
           "name": "password",
