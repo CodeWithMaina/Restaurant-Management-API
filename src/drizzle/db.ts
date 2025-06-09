@@ -16,3 +16,4 @@ main().catch(console.error)
  
 const db = drizzle(client,{schema, logger:true});
 export default db;
+ 
