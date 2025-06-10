@@ -6,6 +6,9 @@ import {
   getCityService,
   updateCityService,
 } from "./city.service";
+import { cityIdSchema, CreateCityInput, createCitySchema, UpdateCityInput, updateCitySchema } from "../validations/city.validator";
+import { TCityInsert } from "../drizzle/schema";
+import { z } from "zod";
 
 //get all cities
 export const getcities = async (req: Request, res: Response) => {
@@ -41,13 +44,10 @@ export const getCityById = async (req: Request, res: Response) => {
 
 //create a new city
 export const createCity = async (req: Request, res: Response) => {
-  const { name, stateId } = req.body;
-  if (!name || !stateId) {
-    res.status(400).json({ error: "All Fields are Required" });
-    return;
-  }
+ 
   try {
-    const newCity = await createCityService({ name, stateId });
+     const validatedData: CreateCityInput = createCitySchema.parse(req.body);
+    const newCity = await createCityService(validatedData);
     if (newCity == null) {
       res.status(500).json({ message: "Failed to create city" });
     } else {
@@ -58,31 +58,35 @@ export const createCity = async (req: Request, res: Response) => {
   }
 };
 
-//update a city
-
+// Update a city
 export const updateCity = async (req: Request, res: Response) => {
-  const cityId = parseInt(req.params.id);
-  const findCity = await getCityByIdService(cityId);
-  if (findCity == null) {
-    res.status(404).json({ message: "city not found" });
-    return;
-  }
-  if (isNaN(cityId)) {
-    res.status(400).json({ error: "Invalid city Id" });
-    return;
-  }
-  const cityDetails = req.body;
-  if (!cityDetails) {
-    res.status(400).json({ error: "All Fields are required" });
-  }
   try {
-    const updatedCity = await updateCityService(cityId, cityDetails);
-    if (updatedCity == null) {
-      res.status(404).json({ message: "City not found or failed to update" });
-    } else {
-      res.status(200).json({ message: updatedCity });
+    const { id } = cityIdSchema.parse(req.params);
+    const validatedData: UpdateCityInput = updateCitySchema.parse(req.body);
+    
+    const findCity = await getCityByIdService(id);
+    if (!findCity) {
+      return res.status(404).json({ message: "City not found" });
     }
+
+    // Convert to TCityInsert with non-null assertion since we've validated
+    const updateData: Partial<TCityInsert> = {
+      name: validatedData.name,
+      stateId: validatedData.stateId
+    };
+
+    const updatedCity = await updateCityService(id, updateData);
+    res.status(200).json({ message: updatedCity });
   } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        error: "Validation error",
+        details: error.errors.map(e => ({
+          field: e.path[0],
+          message: e.message
+        }))
+      });
+    }
     res.status(500).json({ error: error.message || "Failed to update city" });
   }
 };

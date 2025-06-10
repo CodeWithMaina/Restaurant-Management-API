@@ -6,6 +6,8 @@ import {
   getAddressServices,
   updateAddressServices,
 } from "./address.service";
+import { CreateAddressInput, UpdateAddressInput, validateCreateAddress, validateUpdateAddress } from "../validations/address.validator";
+import { TAddressInsert } from "../drizzle/schema";
 
 //Business logic for address-related operations
 export const getAddresses = async (req: Request, res: Response) => {
@@ -42,25 +44,10 @@ export const getAddressById = async (req: Request, res: Response) => {
 };
 
 export const createAddress = async (req: Request, res: Response) => {
-  const address = req.body;
-  if (
-    !address.cityId ||
-    !address.zipCode ||
-    !address.streetAddress1 ||
-    !address.streetAddress2 ||
-    !address.userId ||
-    !address.deliveryInstructions
-  ) {
-    res.status(400).json({ error: "All fields are required" });
-    return; // Prevent further execution
-  }
   try {
-    const newAddress = await createAddressService(address);
-    if (newAddress == null) {
-      res.status(500).json({ message: "Failed to create address" });
-    } else {
-      res.status(201).json({ message: newAddress });
-    }
+    const validatedData = validateCreateAddress(req.body);
+    const newAddress = await createAddressService(validatedData);
+    res.status(201).json({ message: newAddress });
   } catch (error: any) {
     res
       .status(500)
@@ -70,33 +57,43 @@ export const createAddress = async (req: Request, res: Response) => {
 
 export const updateAddress = async (req: Request, res: Response) => {
   const addressId = parseInt(req.params.id);
-  const address = await getAddressByIdServices(addressId);
-  if (address == null) {
-    res.status(404).json({ message: "Address not found" });
+   if (isNaN(addressId)) {
+    res.status(400).json({ error: "Invalid address ID" });
     return;
   }
 
-  const addressData = req.body;
-  if (
-    !addressData.cityId ||
-    !addressData.zipCode ||
-    !addressData.streetAddress1 ||
-    !addressData.userId ||
-    !addressData.deliveryInstructions
-  ) {
-    res.status(400).json({ error: "All fields are required" });
-    return; // Prevent further execution
-  }
-  try {
-    const updatedAddress = await updateAddressServices(addressId, addressData);
-    if (updatedAddress == null) {
-      res
-        .status(404)
-        .json({ message: "Address not found or failed to update" });
-    } else {
-      res.status(200).json({ message: updatedAddress });
+   try {
+    // Check if address exists
+    if (!await getAddressByIdServices(addressId)) {
+      return res.status(404).json({ message: "Address not found" });
     }
-  } catch (error: any) {
+
+    // Validate and get update fields
+    const updateFields = validateUpdateAddress({
+      ...req.body,
+      id: addressId,
+    });
+
+    // Create type-safe update payload
+    const updatePayload: TAddressInsert & { id: number } = {
+      // Start with empty defaults
+      streetAddress1: '',
+      userId: 0,
+      cityId: 0,
+      // Add the ID
+      id: addressId,
+      // Override with validated fields
+      ...updateFields,
+    };
+
+    // Remove undefined values to prevent overwriting with undefined
+    const cleanPayload = Object.fromEntries(
+      Object.entries(updatePayload).filter(([_, v]) => v !== undefined)
+    ) as TAddressInsert & { id: number };
+
+    const result = await updateAddressServices(addressId, cleanPayload);
+    return res.status(200).json({ message: result });
+  }  catch (error: any) {
     res
       .status(500)
       .json({ error: error.message || "Failed to update address" });

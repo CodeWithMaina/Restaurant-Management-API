@@ -45,7 +45,7 @@ export const createCityService = async(myCity: TCityInsert):Promise<string> => {
 }
 
 // Update an existing city
-export const updateCityService= async(id: number, mycity:TCityInsert):Promise<string> => {
+export const updateCityService= async(id: number, mycity:Partial<TCityInsert>):Promise<string> => {
     await db.update(city).set(mycity).where(eq(city.id, id));
     return "city updated successfully 😎";
 }
