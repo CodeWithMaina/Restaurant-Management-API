@@ -1,37 +1,107 @@
 import { eq } from "drizzle-orm";
 import db from "../drizzle/db";
-import { category, TCategoryInsert, TCategorySelect } from "../drizzle/schema"
+import { category, TCategoryInsert, TCategorySelect } from "../drizzle/schema";
+import { menuItem } from "../drizzle/schema";
 
+// Get all categories with their related menu items
+export const getAllCategoryService = async(): Promise<TCategorySelect[]> => {
+    const categories = await db.query.category.findMany({
+        with: {
+            menuItems: {
+                columns: {
+                    id: true,
+                    name: true,
+                    description: true,
+                    price: true,
+                    active: true
+                },
+                where: eq(menuItem.active, true) // Only include active menu items
+            }
+        },
+        orderBy: (category, { asc }) => [asc(category.name)] // Order categories by name
+    });
 
-
-//get all category
-export const getAllCategoryService = async():Promise<TCategorySelect[] | null>=>{
-return await db.query.category.findMany();
+    return categories || [];
 }
 
-//get category by id 
-export const getCategoryByIdService =async(id:number):Promise< TCategoryInsert | undefined> => {
-    return await db.query.category.findFirst({
-       where: eq(category.id,id)
-    })
+// Get category by id with related menu items
+export const getCategoryByIdService = async(id: number): Promise<TCategorySelect | null> => {
+    if (isNaN(id)) {
+        throw new Error("Invalid category ID");
+    }
+
+    const foundCategory = await db.query.category.findFirst({
+        where: eq(category.id, id),
+        with: {
+            menuItems: {
+                columns: {
+                    id: true,
+                    name: true,
+                    description: true,
+                    price: true,
+                    active: true
+                },
+                where: eq(menuItem.active, true) // Only include active menu items
+            }
+        }
+    });
+
+    return foundCategory || null;
 }
 
-//create a new category
-export const createNewCategoryService = async (myCategory:TCategoryInsert):Promise<string>=>{
-await db.insert(category).values(myCategory).returning();
-return  "category created successfully 🎉";
+// Create a new category
+export const createNewCategoryService = async (myCategory: TCategoryInsert): Promise<TCategorySelect> => {
+    const [newCategory] = await db.insert(category)
+        .values(myCategory)
+        .returning();
+    
+    if (!newCategory) {
+        throw new Error("Failed to create category");
+    }
+
+    return newCategory;
 }
 
-//update an existing category
-export const updateCategoryService = async (id:number,mycategory:Partial<TCategoryInsert>):Promise<string> =>{
-    await db.update(category).set(mycategory).where( eq(category.id,id)).returning();
-      return "Category updated successfully 😎";
+// Update an existing category
+export const updateCategoryService = async (id: number, myCategory: Partial<TCategoryInsert>): Promise<TCategorySelect> => {
+    if (isNaN(id)) {
+        throw new Error("Invalid category ID");
+    }
+
+    const [updatedCategory] = await db.update(category)
+        .set(myCategory)
+        .where(eq(category.id, id))
+        .returning();
+
+    if (!updatedCategory) {
+        throw new Error("Category not found");
+    }
+
+    return updatedCategory;
 }
 
-//delete a category
-export const deleteCategoryService = async(id:number):Promise<string>=>{
-await db.delete(category).where (eq(category.id,id));
-return "Category deleted successfully 🎉"
+// Delete a category (with check for existing menu items)
+export const deleteCategoryService = async(id: number): Promise<TCategorySelect> => {
+    if (isNaN(id)) {
+        throw new Error("Invalid category ID");
+    }
+
+    // First check if there are any active menu items using this category
+    const existingMenuItems = await db.query.menuItem.findMany({
+        where: eq(menuItem.categoryId, id)
+    });
+
+    if (existingMenuItems.length > 0) {
+        throw new Error("Cannot delete category as it has associated menu items");
+    }
+
+    const [deletedCategory] = await db.delete(category)
+        .where(eq(category.id, id))
+        .returning();
+
+    if (!deletedCategory) {
+        throw new Error("Category not found");
+    }
+
+    return deletedCategory;
 }
-
-

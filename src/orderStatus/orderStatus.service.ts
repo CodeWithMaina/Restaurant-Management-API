@@ -1,37 +1,50 @@
-import {eq} from "drizzle-orm"
-import db from "../drizzle/db"
-import {TOrderStatusInsert, TOrderStatusSelect, orderStatus} from "../drizzle/schema"
+import { eq } from "drizzle-orm";
+import db from "../drizzle/db";
+import { orderStatus, TOrderStatusInsert, TOrderStatusSelect } from "../drizzle/schema";
+import { OrderStatusInput, OrderStatusSchema, PartialOrderStatusInput, PartialOrderStatusSchema } from "../validations/orderStatus.validator";
 
-
-// Get all orderStatus
+// Get all orderStatus with relations
 export const getorderStatusServices = async (): Promise<TOrderStatusSelect[] | null> => {
-  return await db.query.orderStatus.findMany({});
-};
-
-// Get orderStatus by ID
-export const getorderStatusByIdServices = async (orderId: number): Promise<TOrderStatusSelect | undefined> => {
-  return await db.query.orderStatus.findFirst({
-    where: eq(orderStatus.id, orderId)
+  return await db.query.orderStatus.findMany({
+    with: {
+      order: true,
+      statusCatalog: true
+    }
   });
 };
 
-// create a new orderStatus
-export const createorderStatusServices=async(orderStatusData:TOrderStatusInsert):Promise<string>=>{
-  await db.insert(orderStatus).values(orderStatusData).returning();
-  return "orderStatus created succesfully "
-}
-
-//update an orderStatus
-export const updateorderStatusServices = async (orderStatusId: number, orderStatusData: TOrderStatusInsert): Promise<string> => {
-  await db.update(orderStatus).set(orderStatusData).where(eq(orderStatus.id, orderStatusId)).returning();
-  return "orderStatus updated successfully ";
+// Get orderStatus by ID with relations
+export const getorderStatusByIdServices = async (id: number): Promise<TOrderStatusSelect | undefined> => {
+  return await db.query.orderStatus.findFirst({
+    where: eq(orderStatus.id, id),
+    with: {
+      order: true,
+      statusCatalog: true
+    }
+  });
 };
 
-//Delete an orderStatus
-export const deleteorderStatusServices = async (orderStatusId: number): Promise<string> => {
-  await db.delete(orderStatus).where(eq(orderStatus.id, orderStatusId)).returning();
-  return "orderStatus deleted successfully ";
+// Create a new orderStatus
+export const createorderStatusServices = async (data: OrderStatusInput): Promise<TOrderStatusSelect> => {
+  const validatedData = OrderStatusSchema.parse(data);
+  const result = await db.insert(orderStatus).values(validatedData).returning();
+  return result[0];
 };
 
+// Update an orderStatus
+export const updateorderStatusServices = async (id: number, data: PartialOrderStatusInput): Promise<TOrderStatusSelect> => {
+  const validatedData = PartialOrderStatusSchema.parse(data);
+  const result = await db.update(orderStatus)
+    .set(validatedData)
+    .where(eq(orderStatus.id, id))
+    .returning();
+  return result[0];
+};
 
-
+// Delete an orderStatus
+export const deleteorderStatusServices = async (id: number): Promise<TOrderStatusSelect> => {
+  const result = await db.delete(orderStatus)
+    .where(eq(orderStatus.id, id))
+    .returning();
+  return result[0];
+};
