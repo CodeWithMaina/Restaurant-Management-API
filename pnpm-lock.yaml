@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@neondatabase/serverless':
+        specifier: ^1.0.1
+        version: 1.0.1
       bcrypt:
         specifier: ^6.0.0
         version: 6.0.0
@@ -2790,7 +2793,6 @@ snapshots:
     dependencies:
       '@types/node': 22.15.31
       '@types/pg': 8.15.4
-    optional: true
 
   '@noble/hashes@1.8.0': {}
 
@@ -2906,7 +2908,6 @@ snapshots:
   '@types/node@22.15.31':
     dependencies:
       undici-types: 6.21.0
-    optional: true
 
   '@types/nodemailer@6.4.17':
     dependencies:

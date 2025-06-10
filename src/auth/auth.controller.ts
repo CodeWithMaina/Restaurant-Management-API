@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, RequestHandler } from "express";
 import {
   createUserServices,
   getUserByEmailService,
@@ -11,7 +11,7 @@ import { getUserByIdServices } from "../user/user.service";
 import { createUserSchema, loginSchema } from "../validations/auth.validator";
 import { z } from "zod";
 
-export const createUser = async (req: Request, res: Response) => {
+export const createUser: RequestHandler = async (req: Request, res: Response) => {
   try {
     // Validate input
     const validatedData = createUserSchema.parse(req.body);
@@ -45,14 +45,15 @@ export const createUser = async (req: Request, res: Response) => {
     res.status(201).json(newUser);
   } catch (error: any) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors });
+      res.status(400).json({ error: error.errors });
+      return;
     }
     res.status(500).json({ error: error.message || "Failed to create user" });
   }
 };
 
 //Login User
-export const loginUser = async (req: Request, res: Response) => {
+export const loginUser: RequestHandler = async (req: Request, res: Response) => {
   try {
     const validatedData = loginSchema.parse(req.body);
     const { email, password } = validatedData;
@@ -92,22 +93,25 @@ export const loginUser = async (req: Request, res: Response) => {
       });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors });
+      res.status(400).json({ error: error.errors });
+      return;
     }
     res.status(500).json({ error: error.message || "Failed to login user" });
   }
 };
 
-export const passwordReset = async (req: Request, res: Response) => {
+export const passwordReset: RequestHandler = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
     if (!email) {
-      return res.status(400).json({ error: "Email is required" });
+      res.status(400).json({ error: "Email is required" });
+      return;
     }
 
     const user = await getUserByEmailService(email);
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      res.status(404).json({ error: "User not found" });
+      return;
     }
 
     if (!process.env.JWT_SECRET) {
@@ -132,24 +136,25 @@ export const passwordReset = async (req: Request, res: Response) => {
 
     if (!emailResult) {
       console.error("Failed to send reset email");
-      return res.status(500).json({ error: "Failed to send reset email" });
+      res.status(500).json({ error: "Failed to send reset email" });
+      return;
     }
 
     console.log("Password reset email sent successfully to:", email);
-    return res.status(200).json({ 
+    res.status(200).json({ 
       message: "Password reset email sent successfully",
       token: resetToken // For testing, remove in production
     });
 
   } catch (error: any) {
     console.error("Password reset error:", error);
-    return res.status(500).json({ 
+    res.status(500).json({ 
       error: error.message || "Failed to reset password" 
     });
   }
 };
 
-export const updatePassword = async (req: Request, res: Response) => {
+export const updatePassword: RequestHandler = async (req: Request, res: Response) => {
   try {
     const { token } = req.params;
     const { password } = req.body;

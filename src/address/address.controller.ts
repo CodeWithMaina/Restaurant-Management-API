@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, RequestHandler, Response } from "express";
 import {
   createAddressService,
   deleteAddressServices,
@@ -10,7 +10,7 @@ import { CreateAddressInput, UpdateAddressInput, validateCreateAddress, validate
 import { TAddressInsert } from "../drizzle/schema";
 
 //Business logic for address-related operations
-export const getAddresses = async (req: Request, res: Response) => {
+export const getAddresses: RequestHandler = async (req: Request, res: Response) => {
   try {
     const allAddresses = await getAddressServices();
     if (allAddresses == null || allAddresses.length == 0) {
@@ -25,7 +25,7 @@ export const getAddresses = async (req: Request, res: Response) => {
   }
 };
 
-export const getAddressById = async (req: Request, res: Response) => {
+export const getAddressById: RequestHandler = async (req: Request, res: Response) => {
   const addressId = parseInt(req.params.id);
   if (isNaN(addressId)) {
     res.status(400).json({ error: "Invalid address ID" });
@@ -43,7 +43,7 @@ export const getAddressById = async (req: Request, res: Response) => {
   }
 };
 
-export const createAddress = async (req: Request, res: Response) => {
+export const createAddress: RequestHandler = async (req: Request, res: Response) => {
   try {
     const validatedData = validateCreateAddress(req.body);
     const newAddress = await createAddressService(validatedData);
@@ -55,7 +55,7 @@ export const createAddress = async (req: Request, res: Response) => {
   }
 };
 
-export const updateAddress = async (req: Request, res: Response) => {
+export const updateAddress: RequestHandler = async (req: Request, res: Response) => {
   const addressId = parseInt(req.params.id);
    if (isNaN(addressId)) {
     res.status(400).json({ error: "Invalid address ID" });
@@ -65,7 +65,8 @@ export const updateAddress = async (req: Request, res: Response) => {
    try {
     // Check if address exists
     if (!await getAddressByIdServices(addressId)) {
-      return res.status(404).json({ message: "Address not found" });
+      res.status(404).json({ message: "Address not found" });
+      return;
     }
 
     // Validate and get update fields
@@ -92,7 +93,7 @@ export const updateAddress = async (req: Request, res: Response) => {
     ) as TAddressInsert & { id: number };
 
     const result = await updateAddressServices(addressId, cleanPayload);
-    return res.status(200).json({ message: result });
+    res.status(200).json({ message: result });
   }  catch (error: any) {
     res
       .status(500)
@@ -100,7 +101,7 @@ export const updateAddress = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteAddress = async (req: Request, res: Response) => {
+export const deleteAddress: RequestHandler = async (req: Request, res: Response) => {
   const addressId = parseInt(req.params.id);
   const address = await getAddressByIdServices(addressId);
   if (address == null) {

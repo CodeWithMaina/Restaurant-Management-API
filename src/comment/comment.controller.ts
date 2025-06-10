@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, RequestHandler } from "express";
 import {
   createCommentService,
   deletecommentService,
@@ -7,8 +7,9 @@ import {
   updateCommentService,
 } from "./comment.servise";
 import { commentIdSchema, CreateCommentInput, createCommentSchema, UpdateCommentInput, updateCommentSchema } from "../validations/comment.validator";
+import { z } from "zod";
 
-export const getComments = async (req: Request, res: Response) => {
+export const getComments: RequestHandler = async (req: Request, res: Response) => {
   try {
     const comments = await commentService();
     if (comments) {
@@ -23,7 +24,7 @@ export const getComments = async (req: Request, res: Response) => {
   }
 };
 
-export const getCommentById = async (req: Request, res: Response) => {
+export const getCommentById: RequestHandler = async (req: Request, res: Response) => {
   const commentId = parseInt(req.params.id);
   if (isNaN(commentId)) {
     res.status(400).json({ error: "Invalid comment ID" });
@@ -41,8 +42,7 @@ export const getCommentById = async (req: Request, res: Response) => {
   }
 };
 
-export const createComment = async (req: Request, res: Response) => {
-  
+export const createComment: RequestHandler = async (req: Request, res: Response) => {
   try {
      const validatedData: CreateCommentInput = createCommentSchema.parse({
       ...req.body,
@@ -53,13 +53,15 @@ export const createComment = async (req: Request, res: Response) => {
     const newComment = await createCommentService(validatedData);
     res.status(201).json({ message: newComment });
   } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ error: error.errors });
+      return;
+    }
     res.status(500).json({ error: error.message || "Failed to create comment" });
   }
 };
 
-export const updateComment = async (req: Request, res: Response) => {
- 
-
+export const updateComment: RequestHandler = async (req: Request, res: Response) => {
   try {
     const { id } = commentIdSchema.parse(req.params);
     // const validatedData: UpdateCommentInput = updateCommentSchema.parse(req.body);
@@ -67,28 +69,34 @@ export const updateComment = async (req: Request, res: Response) => {
     
     const commentCheck = await getCommentByIdService(id);
     if (!commentCheck) {
-      return res.status(404).json({ message: "Comment not found" });
+      res.status(404).json({ message: "Comment not found" });
+      return;
     }
     
-
     const updatedComment = await updateCommentService(validatedData, id);
     res.status(200).json({ message: updatedComment });
   } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ error: error.errors });
+      return;
+    }
     res.status(500).json({ error: error.message || "Failed to update comment" });
   }
 };
 
-export const deleteComment = async (req: Request, res: Response) => {
+export const deleteComment: RequestHandler = async (req: Request, res: Response) => {
   const commentId = parseInt(req.params.id);
-  const commentCheck = await getCommentByIdService(commentId);
-  if (commentCheck == null) {
-    res.status(200).json({ message: "Comment Not Found" });
-    return;
-  }
   if (isNaN(commentId)) {
     res.status(400).json({ error: "Invalid comment ID" });
     return; // Prevent further execution
   }
+  
+  const commentCheck = await getCommentByIdService(commentId);
+  if (commentCheck == null) {
+    res.status(404).json({ message: "Comment Not Found" });
+    return;
+  }
+  
   try {
     const deletedComment = await deletecommentService(commentId);
     res.status(200).json({ message: deletedComment });

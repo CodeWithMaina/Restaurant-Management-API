@@ -26,7 +26,7 @@ const app: Application = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(logger);
-app.use(rateLimiterMiddleware);
+// app.use(rateLimiterMiddleware);
 
 //default route
 app.get('/', (req, res:Response) => {
