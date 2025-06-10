@@ -1,112 +1,101 @@
-import { restaurant } from './../drizzle/schema';
 import { Request, Response } from "express";
 import {
-    createNewRestaurantService,
-    deleteRestaurantService,
-    getRestaurantByIdService,
-    getAllRestaurantsService,
-    updateRestaurantService
+  createNewRestaurantService,
+  deleteRestaurantService,
+  getRestaurantByIdService,
+  getAllRestaurantsService,
+  updateRestaurantService
 } from "./restaurant.service";
+import {
+  RestaurantIdSchema,
+  CreateRestaurantSchema,
+  UpdateRestaurantSchema
+} from "../validations/restaurant.validator";
+import z from "zod";
 
 // Get all restaurants
 export const getRestaurants = async (req: Request, res: Response) => {
-    try {
-        const allRestaurants = await getAllRestaurantsService();
-        if (allRestaurants === null || allRestaurants.length === 0) {
-            res.status(404).json({ message: "No Restaurants Found" });
-        } else {
-          res.status(200).json(allRestaurants);
-        }
-    } catch (error: any) {
-        console.error("Error in getRestaurants controller:", error);
-         res.status(500).json({ error: error.message || "Failed to fetch restaurants" });
+  try {
+    const allRestaurants = await getAllRestaurantsService();
+    if (!allRestaurants || allRestaurants.length === 0) {
+      res.status(404).json({ message: "No Restaurants Found" });
+      return;
     }
+    res.status(200).json(allRestaurants);
+  } catch (error) {
+    console.error("Error in getRestaurants controller:", error);
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch restaurants" });
+  }
 };
 
 // Get restaurant by id
 export const getRestaurantById = async (req: Request, res: Response) => {
-    const restaurantId = parseInt(req.params.id);
-
-    if (isNaN(restaurantId)) {
-        res.status(400).json({ error: "Invalid restaurant ID" });
+  try {
+    const { id } = RestaurantIdSchema.parse({ id: Number(req.params.id) });
+    const foundRestaurant = await getRestaurantByIdService(id);
+    
+    if (!foundRestaurant) {
+      res.status(404).json({ message: "Restaurant not found" });
+      return;
     }
-
-    try {
-        const foundRestaurant = await getRestaurantByIdService(restaurantId);
-        if (foundRestaurant === null || foundRestaurant === undefined) {
-             res.status(404).json({ message: "Restaurant not found" });
-        } else {
-            res.status(200).json(foundRestaurant);
-        }
-    } catch (error: any) {
-        console.error(`Error in getRestaurantById controller for ID ${restaurantId}:`, error);
-        res.status(500).json({ error: error.message || "Failed to fetch restaurant" });
+    
+    res.status(200).json(foundRestaurant);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ errors: error.errors });
+    } else {
+      console.error("Error fetching restaurant:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch restaurant" });
     }
+  }
 };
 
 // Create a new restaurant
 export const createRestaurant = async (req: Request, res: Response) => {
-    const restaurantId = parseInt(req.params.id);
-    const restaurant = req.body;
-
-    if (isNaN(restaurantId)) {
-        res.status(400).json({ error: "RestaurantID must be a valid number" });
-        return;
+  try {
+    const validatedData = CreateRestaurantSchema.parse(req.body);
+    const newRestaurant = await createNewRestaurantService(validatedData);
+    res.status(201).json({ message: newRestaurant });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ errors: error.errors });
+    } else {
+      console.error("Error creating restaurant:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to create restaurant" });
     }
-
-    try {
-        const newRestaurant = await createNewRestaurantService(restaurant);
-        if (newRestaurant === null) {
-             res.status(500).json({ message: "Failed to create restaurant" });
-        } else {
-             res.status(201).json({ message:newRestaurant });
-        }
-    } catch (error: any) {
-        console.error("Error in createRestaurant controller:", error);
-         res.status(500).json({ error: error.message || "Failed to create restaurant" });
-    }
+  }
 };
 
 // Update a restaurant
 export const updateRestaurant = async (req: Request, res: Response) => {
-    const restaurantId = parseInt(req.params.id);
+  try {
+    const id = Number(req.params.id);
+    const validatedData = UpdateRestaurantSchema.parse({ ...req.body, id });
     
-    if (isNaN(restaurantId)) {
-        res.status(400).json({ error: "Invalid restaurant ID" });
+    const updatedRestaurant = await updateRestaurantService(id, validatedData);
+    res.status(200).json({ message: updatedRestaurant });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ errors: error.errors });
+    } else {
+      console.error("Error updating restaurant:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to update restaurant" });
     }
-
-    const restaurant = req.body;
-    try {
-         const updatedRestaurant = await updateRestaurantService(restaurantId, restaurant);
-            if (updatedRestaurant == null) {
-                res.status(404).json({ message: "Restaurant not found or failed to update" });
-            } else {
-                res.status(200).json({ message: updatedRestaurant });
-            }
-        
-    } catch (error:any) {
-         res.status(500).json({ error: error.message || "Failed to update city" });
-    }
+  }
 };
 
 // Delete a restaurant
 export const deleteRestaurant = async (req: Request, res: Response) => {
-    const restaurantId = parseInt(req.params.id);
-
-    if (isNaN(restaurantId)) {
-         res.status(400).json({ error: "Invalid restaurant ID" });
+  try {
+    const { id } = RestaurantIdSchema.parse({ id: Number(req.params.id) });
+    const deleteMessage = await deleteRestaurantService(id);
+    res.status(200).json({ message: deleteMessage });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ errors: error.errors });
+    } else {
+      console.error("Error deleting restaurant:", error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to delete restaurant" });
     }
-
-    try {
-        const deletedConfirmation = await deleteRestaurantService(restaurantId);
-
-        if (deletedConfirmation === "Restaurant deleted successfully 🎉") {
-            res.status(200).json({ message: `Restaurant with ID ${restaurantId} deleted successfully` });
-        } else {
-             res.status(404).json({ message: "Restaurant not found or could not be deleted" });
-        }
-    } catch (error: any) {
-        console.error(`Error in deleteRestaurant controller for ID ${restaurantId}:`, error);
-         res.status(500).json({ error: error.message || "Failed to delete restaurant" });
-    }
+  }
 };

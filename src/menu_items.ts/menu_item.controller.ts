@@ -7,9 +7,11 @@ import {
   deleteMenuItemService,
 } from "./menu_item.service";
 import {
-  createMenuItemValidator,
-  updateMenuItemValidator,
+  MenuItemIdSchema,
+  CreateMenuItemSchema,
+  UpdateMenuItemSchema,
 } from "../validations/menu_item.validotor";
+import z from "zod";
 
 export const getMenuItems = async (req: Request, res: Response) => {
   try {
@@ -19,104 +21,76 @@ export const getMenuItems = async (req: Request, res: Response) => {
       return;
     }
     res.status(200).json(menuItems);
-    return;
   } catch (error) {
     console.error("Error fetching menu items:", error);
     res.status(500).json({ message: "Internal server error" });
-    return;
   }
 };
 
 export const getMenuItemById = async (req: Request, res: Response) => {
-  const menuItemId = parseInt(req.params.id);
-  if (isNaN(menuItemId)) {
-    res.status(400).json({ message: "Invalid menu item ID" });
-    return;
-  }
-
   try {
-    const menuItem = await getMenuItemByIdService(menuItemId);
+    const { id } = MenuItemIdSchema.parse({ id: Number(req.params.id) });
+    const menuItem = await getMenuItemByIdService(id);
+    
     if (!menuItem) {
       res.status(404).json({ message: "Menu item not found" });
       return;
     }
+    
     res.status(200).json(menuItem);
-    return;
   } catch (error) {
-    console.error("Error fetching menu item:", error);
-    res.status(500).json({ message: "Internal server error" });
-    return;
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ errors: error.errors });
+    } else {
+      console.error("Error fetching menu item:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   }
 };
 
 export const createMenuItem = async (req: Request, res: Response) => {
-  const menuItem = req.body;
-  if (
-    !menuItem.name ||
-    !menuItem.restaurantId ||
-    !menuItem.categoryId ||
-    !menuItem.description ||
-    !menuItem.ingredients ||
-    !menuItem.price ||
-    !menuItem.active
-  ) {
-    res.status(400).json({ error: "All fields are required" });
-    return; // Prevent further execution
-  }
   try {
-    const newMenuItem = await createMenuItemService(menuItem);
-    res.status(201).json({ menuItem: newMenuItem });
-    return;
+    const validatedData = CreateMenuItemSchema.parse(req.body);
+    const newMenuItem = await createMenuItemService(validatedData);
+    res.status(201).json({ message: newMenuItem });
   } catch (error) {
-    console.error("Error creating menu item:", error);
-    res.status(500).json({ message: "Internal server error" });
-    return;
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ errors: error.errors });
+    } else {
+      console.error("Error creating menu item:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   }
 };
 
 export const updateMenuItem = async (req: Request, res: Response) => {
-  const menuItemId = parseInt(req.params.id);
-  const menuItemData = req.body;
-
-  if (
-    !menuItemData.name ||
-    !menuItemData.description ||
-    !menuItemData.ingredients ||
-    !menuItemData.restaurantId ||
-    !menuItemData.categoryId ||
-    isNaN(parseFloat(menuItemData.price)) ||
-    typeof menuItemData.active !== "boolean"
-  ) {
-    res.status(400).json({ error: "All fields are required" });
-    return; // 🔥 Prevents execution from continuing
-  }
-
   try {
-    const updatedMenuItem = await updateMenuItemService(
-      menuItemData,
-      menuItemId
-    );
-    res.status(200).json({ menuItem: updatedMenuItem });
+    const id = Number(req.params.id);
+    const validatedData = UpdateMenuItemSchema.parse({ ...req.body, id });
+    
+    const updatedMenuItem = await updateMenuItemService(validatedData, id);
+    res.status(200).json({ message: updatedMenuItem });
   } catch (error) {
-    console.error("Error updating menu item:", error);
-    res.status(500).json({ message: "Internal server error" });
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ errors: error.errors });
+    } else {
+      console.error("Error updating menu item:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   }
 };
 
 export const deleteMenuItem = async (req: Request, res: Response) => {
-  const menuItemId = parseInt(req.params.id);
-  if (isNaN(menuItemId)) {
-    res.status(400).json({ message: "Invalid menu item ID" });
-    return;
-  }
-
   try {
-    const deleteMessage = await deleteMenuItemService(menuItemId);
+    const { id } = MenuItemIdSchema.parse({ id: Number(req.params.id) });
+    const deleteMessage = await deleteMenuItemService(id);
     res.status(200).json({ message: deleteMessage });
-    return;
   } catch (error) {
-    console.error("Error deleting menu item:", error);
-    res.status(500).json({ message: "Internal server error" });
-    return;
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ errors: error.errors });
+    } else {
+      console.error("Error deleting menu item:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   }
 };

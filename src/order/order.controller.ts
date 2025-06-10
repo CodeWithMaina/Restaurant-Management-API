@@ -41,7 +41,7 @@ export const getOrderById = async (req: Request, res: Response) => {
   }
 };
 
-// Create new order (without validation)
+// Create new order 
 export const createOrder = async (req: Request, res: Response) => {
   const orders = req.body;
   if (!orders || Object.keys(orders).length === 0) {
@@ -61,7 +61,7 @@ export const createOrder = async (req: Request, res: Response) => {
   }
 };
 
-// Update order (without validation)
+// Update order 
 export const updateOrder = async (req: Request, res: Response) => {
   const orderId = parseInt(req.params.id);
   if (isNaN(orderId)) {
