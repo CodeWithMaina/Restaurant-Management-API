@@ -21,6 +21,7 @@ import { restaurantOwnerRouter } from './restaurant_owner/restaurantOwner.route'
 dotenv.config();
 
 const app: Application = express();
+const cors = require('cors');
 
 // Basic Middleware
 app.use(express.json());
@@ -32,6 +33,16 @@ app.use(logger);
 app.get('/', (req, res:Response) => {
   res.send("Welcome to Express API Backend WIth Drizzle ORM and PostgreSQL");
 });
+
+// Enable CORS for all routes
+app.use(cors());
+
+// Or configure specific origins
+app.use(cors({
+  origin: 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 
 //import route
