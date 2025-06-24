@@ -5,6 +5,7 @@ import {
   createMenuItemService,
   updateMenuItemService,
   deleteMenuItemService,
+  getMenuItemByRestaurantIdService,
 } from "./menu_item.service";
 import {
   MenuItemIdSchema,
@@ -92,5 +93,27 @@ export const deleteMenuItem = async (req: Request, res: Response) => {
       console.error("Error deleting menu item:", error);
       res.status(500).json({ message: "Internal server error" });
     }
+  }
+};
+
+// getOrderItemsByRestaurantId Controller
+
+export const getMenuItemByRestaurantIdController = async (req: Request, res: Response) => {
+  const restaurantId = parseInt(req.params.id);
+  if (isNaN(restaurantId)) {
+    res.status(400).json({ error: "Invalid restaurant ID" });
+    return;
+  }
+
+  try {
+    const orders = await getMenuItemByRestaurantIdService(restaurantId);
+    if (!orders || orders.length === 0) {
+      res.status(404).json({ message: "No menu items found for this restaurant" });
+    } else {
+      res.status(200).json(orders);
+    }
+
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Failed to fetch menu items" });
   }
 };

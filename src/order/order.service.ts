@@ -1,3 +1,4 @@
+import { city } from "./../drizzle/schema";
 import { eq } from "drizzle-orm";
 import db from "../drizzle/db";
 import {
@@ -43,19 +44,76 @@ export const getOrderByIdServices = async (
   return await db.query.orders.findFirst({
     where: eq(orders.id, orderId),
     with: {
-      restaurant: true,
-      user: true,
-      driver: true,
-      deliveryAddress: true,
-      orderItems: {
-        with: {
-          menuItem: true,
+      restaurant: {
+        columns: {
+          name: true,
+          streetAddress: true,
+          zipCode: true,
+          cityId: true,
         },
       },
-      comments: true,
+      user: {
+        columns: {
+          name: true,
+          contactPhone: true,
+          email: true,
+          userType: true,
+        },
+      },
+      driver: {
+        columns: {
+          carMake: true,
+          carModel: true,
+          carYear: true,
+          online: true,
+          delivering: true,
+        },
+      },
+      deliveryAddress: {
+        columns: {
+          streetAddress1: true,
+          streetAddress2: true,
+          zipCode: true,
+          deliveryInstructions: true,
+          cityId: true,
+        },
+      },
+      orderItems: {
+        columns: {
+          orderId: true,
+          quantity: true,
+          price: true,
+        },
+        with: {
+          menuItem: {
+            columns: {
+              id: true,
+              name: true,
+              description: true,
+              ingredients: true,
+              price: true,
+              active: true,
+            },
+          },
+        },
+      },
+      comments: {
+        columns: {
+          id: true,
+          userId: true,
+          commentText: true,
+          isPraise: true,
+          isComplaint: true,
+        },
+      },
       statuses: {
         with: {
-          statusCatalog: true,
+          statusCatalog: {
+            columns: {
+              id: true,
+              name: true,
+            },
+          },
         },
       },
     },

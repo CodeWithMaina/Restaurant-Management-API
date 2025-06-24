@@ -1,3 +1,4 @@
+import { restaurant } from './../drizzle/schema';
 import db  from '../drizzle/db';
 import { menuItem, TMenuItemSelect } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
@@ -77,4 +78,11 @@ export const updateMenuItemService = async (menu_item: UpdateMenuItemInput, id: 
 export const deleteMenuItemService = async (id: number): Promise<string> => {
   await db.delete(menuItem).where(eq(menuItem.id, id)).returning();
   return "Menu item deleted successfully";
+};
+
+//Getting menu item by restaurant id
+export const getMenuItemByRestaurantIdService = async (restaurantId: number): Promise<TMenuItemSelect[] | null> => {
+  return await db.query.menuItem.findMany({
+    where: eq(menuItem.restaurantId, restaurantId),
+  });
 };
