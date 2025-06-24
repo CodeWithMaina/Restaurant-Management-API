@@ -3,6 +3,7 @@ import {
   createOrderServices,
   deleteOrderServices,
   getOrderByIdServices,
+  getOrderItemsByRestaurantIdService,
   getOrdersServices,
   updateOrderServices
 } from "./order.service";
@@ -111,5 +112,28 @@ export const deleteOrder = async (req: Request, res: Response) => {
     }
   } catch (error: any) {
     res.status(500).json({ error: error.message || "Failed to delete order" });
+  }
+};
+
+
+// getOrderItemsByRestaurantId Controller
+
+export const getOrderItemsByRestaurantIdController = async (req: Request, res: Response) => {
+  const restaurantId = parseInt(req.params.id);
+  if (isNaN(restaurantId)) {
+    res.status(400).json({ error: "Invalid restaurant ID" });
+    return;
+  }
+
+  try {
+    const orders = await getOrderItemsByRestaurantIdService(restaurantId);
+    if (!orders || orders.length === 0) {
+      res.status(404).json({ message: "No orders found for this restaurant" });
+    } else {
+      res.status(200).json(orders);
+    }
+
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Failed to fetch order items" });
   }
 };

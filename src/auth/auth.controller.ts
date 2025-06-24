@@ -10,8 +10,12 @@ import { sendNotificationEmail } from "../middleware/googleMailer";
 import { getUserByIdServices } from "../user/user.service";
 import { createUserSchema, loginSchema } from "../validations/auth.validator";
 import { z } from "zod";
+import { TUserWithRelations } from "../types/user.types";
 
-export const createUser: RequestHandler = async (req: Request, res: Response) => {
+export const createUser: RequestHandler = async (
+  req: Request,
+  res: Response
+) => {
   try {
     // Validate input
     const validatedData = createUserSchema.parse(req.body);
@@ -53,14 +57,25 @@ export const createUser: RequestHandler = async (req: Request, res: Response) =>
 };
 
 //Login User
-export const loginUser: RequestHandler = async (req: Request, res: Response) => {
+export const loginUser: RequestHandler = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const validatedData = loginSchema.parse(req.body);
     const { email, password } = validatedData;
 
-    const user = await getUserByEmailService(email);
+    const user = await getUserByEmailService(email, {
+      ownedRestaurants: {
+        with: {
+          restaurant: true
+        }
+      }
+    });
+
+    
     if (!user) {
-      res.status(404).json({ error: "User not found" });
+      res.status(401).json({ error: "User not found" });
       return;
     }
 
@@ -71,11 +86,15 @@ export const loginUser: RequestHandler = async (req: Request, res: Response) => 
       return;
     }
 
+    const primaryRestaurant = user.ownedRestaurants?.[0]?.restaurant || null;
+
     //Generate a token
     let payload = {
+      userName: user.name,
       userId: user.id,
       email: user.email,
       userType: user.userType,
+      restaurantId: primaryRestaurant?.id || null,
       //expiresIn: "1h" // Optional: Set token expiration
       exp: Math.floor(Date.now() / 1000) + 60 * 60, // Token expires in 1 hour
     };
@@ -83,14 +102,14 @@ export const loginUser: RequestHandler = async (req: Request, res: Response) => 
     let secret = process.env.JWT_SECRET as string;
     const token = jwt.sign(payload, secret);
 
-    res
-      .status(200)
-      .json({
-        token,
-        userId: user.id,
-        email: user.email,
-        userType: user.userType,
-      });
+    res.status(200).json({
+      token,
+      userName: user.name,
+      userId: user.id,
+      email: user.email,
+      userType: user.userType,
+      restaurantId: primaryRestaurant?.id || null,
+    });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ error: error.errors });
@@ -100,7 +119,10 @@ export const loginUser: RequestHandler = async (req: Request, res: Response) => 
   }
 };
 
-export const passwordReset: RequestHandler = async (req: Request, res: Response) => {
+export const passwordReset: RequestHandler = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const { email } = req.body;
     if (!email) {
@@ -141,20 +163,22 @@ export const passwordReset: RequestHandler = async (req: Request, res: Response)
     }
 
     console.log("Password reset email sent successfully to:", email);
-    res.status(200).json({ 
+    res.status(200).json({
       message: "Password reset email sent successfully",
-      token: resetToken // For testing, remove in production
+      token: resetToken, // For testing, remove in production
     });
-
   } catch (error: any) {
     console.error("Password reset error:", error);
-    res.status(500).json({ 
-      error: error.message || "Failed to reset password" 
+    res.status(500).json({
+      error: error.message || "Failed to reset password",
     });
   }
 };
 
-export const updatePassword: RequestHandler = async (req: Request, res: Response) => {
+export const updatePassword: RequestHandler = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const { token } = req.params;
     const { password } = req.body;

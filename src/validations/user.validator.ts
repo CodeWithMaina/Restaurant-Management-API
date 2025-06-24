@@ -7,7 +7,9 @@ const passwordRegex = /^.{4,}$/;
 export const UserSchema = z.object({
   name: z.string().min(2).max(255),
   email: z.string().email(),
-  contactPhone: z.string().min(10).max(20),
+  contactPhone: z.string()
+  .min(10).max(15)
+  .regex(/^[0-9]+$/, "Must be a valid phone number"),
   password: z.string().regex(passwordRegex, {
     message: "Password must be at least 4 characters long"
   }),

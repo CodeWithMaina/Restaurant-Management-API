@@ -1,6 +1,6 @@
 import { orders } from './../drizzle/schema';
 import {Router} from "express"
-import { createOrder, deleteOrder, getOrderById, getOrders, updateOrder } from './order.controller';
+import { createOrder, deleteOrder, getOrderById, getOrderItemsByRestaurantIdController, getOrders, updateOrder } from './order.controller';
 
 
 export const ordersRouter = Router();
@@ -25,3 +25,7 @@ ordersRouter.put('/orders/:id',updateOrder);
 
 // Delete an existing user
 ordersRouter.delete('/orders/:id', deleteOrder);
+
+// Get orders with restaurant id
+// Add this to order.route.ts
+ordersRouter.get('/orders/:restaurant/:id', getOrderItemsByRestaurantIdController);
