@@ -6,6 +6,7 @@ import {
   updateMenuItemService,
   deleteMenuItemService,
   getMenuItemByRestaurantIdService,
+  getMenuItemByCategoryIdService,
 } from "./menu_item.service";
 import {
   MenuItemIdSchema,
@@ -115,5 +116,27 @@ export const getMenuItemByRestaurantIdController = async (req: Request, res: Res
 
   } catch (error: any) {
     res.status(500).json({ error: error.message || "Failed to fetch menu items" });
+  }
+};
+
+
+export const getMenuItemByCategoryIdController = async (req: Request, res: Response) => {
+  try {
+    const { id } = MenuItemIdSchema.parse({ id: Number(req.params.id) });
+    const menuItems = await getMenuItemByCategoryIdService(id);
+    
+    if (!menuItems || menuItems.length === 0) {
+      res.status(404).json({ message: "No menu items found for this category" });
+      return;
+    }
+    
+    res.status(200).json(menuItems);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ errors: error.errors });
+    } else {
+      console.error("Error fetching menu items by category:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   }
 };

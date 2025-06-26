@@ -6,19 +6,19 @@ import { menuItem } from "../drizzle/schema";
 // Get all categories with their related menu items
 export const getAllCategoryService = async(): Promise<TCategorySelect[]> => {
     const categories = await db.query.category.findMany({
-        with: {
-            menuItems: {
-                columns: {
-                    id: true,
-                    name: true,
-                    description: true,
-                    price: true,
-                    active: true
-                },
-                where: eq(menuItem.active, true) // Only include active menu items
-            }
-        },
-        orderBy: (category, { asc }) => [asc(category.name)] // Order categories by name
+        // with: {
+        //     menuItems: {
+        //         columns: {
+        //             id: true,
+        //             name: true,
+        //             description: true,
+        //             price: true,
+        //             active: true
+        //         },
+        //         where: eq(menuItem.active, true) // Only include active menu items
+        //     }
+        // },
+        // orderBy: (category, { asc }) => [asc(category.name)] // Order categories by name
     });
 
     return categories || [];

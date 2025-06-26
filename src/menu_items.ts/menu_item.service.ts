@@ -4,19 +4,53 @@ import { menuItem, TMenuItemSelect } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { MenuItemInput, UpdateMenuItemInput } from '../validations/menu_item.validotor';
 
-export const getMenuItemService = async (): Promise<TMenuItemSelect[] | null> => {
+type MenuItemWithRelations = {
+  id: number;
+  name: string;
+  description: string | null;
+  price: string;
+  ingredients: string;
+  active: boolean | null;
+  restaurant: {
+    name: string;
+    streetAddress: string | null;
+    zipCode: string | null;
+  };
+  category: {
+    name: string;
+  };
+  orderItems: {
+    orderId: number;
+    menuItemId: number;
+    quantity: number;
+    itemPrice: string;
+    price: string;
+    comment: string | null;
+  }[];
+};
+
+export const getMenuItemService = async (): Promise<MenuItemWithRelations[] | null> => {
   return await db.query.menuItem.findMany({
+    columns: {
+      id: true,
+      name: true,
+      description: true,
+      price: true,
+      ingredients: true,
+      active: true,
+    },
+    orderBy: (menuItem, { desc }) => [desc(menuItem.id)],
     with: {
       restaurant: {
         columns: {
           name: true,
           streetAddress: true,
           zipCode: true,
-          cityId: true
         }
       },
       category: {
         columns: {
+          id: true,
           name: true
         }
       },
@@ -84,5 +118,27 @@ export const deleteMenuItemService = async (id: number): Promise<string> => {
 export const getMenuItemByRestaurantIdService = async (restaurantId: number): Promise<TMenuItemSelect[] | null> => {
   return await db.query.menuItem.findMany({
     where: eq(menuItem.restaurantId, restaurantId),
+  });
+};
+
+
+// Getting menu items by category id
+export const getMenuItemByCategoryIdService = async (categoryId: number): Promise<TMenuItemSelect[] | null> => {
+  return await db.query.menuItem.findMany({
+    where: eq(menuItem.categoryId, categoryId),
+    with: {
+      restaurant: {
+        columns: {
+          name: true,
+          streetAddress: true,
+          zipCode: true,
+        }
+      },
+      category: {
+        columns: {
+          name: true
+        }
+      }
+    }
   });
 };

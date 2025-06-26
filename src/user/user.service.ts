@@ -15,7 +15,16 @@ export const getUsersServices = async (): Promise<TUsersSelect[] | null> => {
           }
         }
       },
-      driver: true,
+      driver: {
+        columns: {
+          id: true,
+          carMake: true,
+          carModel: true,
+          carYear: true,
+          online: true,
+          delivering: true,
+        }
+      },
       ownedRestaurants: {
         with: {
           restaurant: true

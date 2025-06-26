@@ -5,5 +5,5 @@ export const authRouter = Router();
 
 authRouter.post("/register", createUser);
 authRouter.post("/login", loginUser);
-authRouter.post("/password-reset", passwordReset);
-authRouter.put("/reset/:token", updatePassword);
+authRouter.post("/forgot-password", passwordReset);
+authRouter.put("/password-reset/:token", updatePassword);

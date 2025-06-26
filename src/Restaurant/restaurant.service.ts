@@ -2,13 +2,30 @@ import { eq } from "drizzle-orm";
 import db from "../drizzle/db";
 import { restaurant, city, TRestaurantSelect } from "../drizzle/schema";
 import { RestaurantInput, UpdateRestaurantInput } from "../validations/restaurant.validator";
+import { TRestaurantListItem } from "../types/restaurant.types";
 
-export const getAllRestaurantsService = async (): Promise<TRestaurantSelect[] | null> => {
+
+
+export const getAllRestaurantsService = async (): Promise<TRestaurantListItem[] | null> => {
   return await db.query.restaurant.findMany({
+    columns: {
+      id: true,
+      name: true,
+      streetAddress: true,
+      zipCode: true,
+    },
+    orderBy: (restaurant, { desc }) => [desc(restaurant.id)],
     with: {
       city: {
         columns: {
           name: true,
+        },
+        with: {
+          state: {
+            columns: {
+              name: true,
+            }
+          },
         }
       }
     }

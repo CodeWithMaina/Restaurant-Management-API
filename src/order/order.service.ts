@@ -17,14 +17,58 @@ import {
 // Get all orders with relations
 export const getOrdersServices = async (): Promise<TOrdersSelect[] | null> => {
   return await db.query.orders.findMany({
+    columns:{
+      id: true,
+      // restaurantId: true,
+      // userId: true,
+      // driverId: true,
+      // deliveryAddressId: true,
+      estimatedDeliveryTime: true,
+      actualDeliveryTime: true,
+      price: true,
+      discount: true,
+      finalPrice: true,
+      createdAt: true,
+    },
     with: {
-      restaurant: true,
-      user: true,
-      driver: true,
-      deliveryAddress: true,
+      restaurant: {
+        columns: { name: true, streetAddress: true, zipCode: true },
+      },
+      user: {
+        columns:{
+          id: true,
+          name: true,
+          contactPhone: true,
+          email: true,
+          userType: true,
+        }
+      },
+      driver: {
+        columns: {
+          carMake: true,
+          carModel: true,
+          carYear: true,
+          userId: true,
+        },
+      },
+      deliveryAddress: {
+        columns: {
+          streetAddress1: true,
+          zipCode: true,
+          deliveryInstructions: true,
+        },
+      },
       orderItems: {
         with: {
-          menuItem: true,
+          menuItem: {
+            columns:{
+              id: true,
+              name: true,
+              description: true,
+              ingredients: true,
+              price: true,
+            }
+          },
         },
       },
       comments: true,

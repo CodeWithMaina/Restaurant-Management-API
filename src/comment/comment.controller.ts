@@ -3,7 +3,8 @@ import {
   createCommentService,
   deletecommentService,
   getCommentByIdService,
-  commentService,
+  getCommentService,
+  getCommentServiceByRestaurantId,
   updateCommentService,
 } from "./comment.servise";
 import { commentIdSchema, CreateCommentInput, createCommentSchema, UpdateCommentInput, updateCommentSchema } from "../validations/comment.validator";
@@ -11,7 +12,7 @@ import { z } from "zod";
 
 export const getComments: RequestHandler = async (req: Request, res: Response) => {
   try {
-    const comments = await commentService();
+    const comments = await getCommentService();
     if (comments) {
       res.status(200).json(comments);
     } else {
@@ -104,5 +105,27 @@ export const deleteComment: RequestHandler = async (req: Request, res: Response)
     res
       .status(500)
       .json({ error: error.message || "Failed to delete comment" });
+  }
+};
+
+
+export const getCommentsByRestaurantIdController: RequestHandler = async (req, res) => {
+  try {
+    const { restaurantId } = req.params;
+    const restaurantIdNum = Number(restaurantId);
+    if (isNaN(restaurantIdNum)) {
+      res.status(400).json({ error: 'Invalid restaurant ID' });
+      return;
+    }
+
+    const comments = await getCommentServiceByRestaurantId(restaurantIdNum);
+    if (comments?.length) {
+      res.status(200).json(comments);
+    } else {
+      res.status(404).json({ message: 'No comments found' });
+    }
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error('Unknown error');
+    res.status(500).json({ error: err.message });
   }
 };
